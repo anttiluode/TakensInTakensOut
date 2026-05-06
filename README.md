@@ -129,6 +129,12 @@ Significance
 This is a foundational building block for phase-space signal processing. It shows that meaningful signal structure can be
 manipulated in the reconstructed attractor and projected back, rather than operating directly in the original time or frequency domain.
 
+### 6. split_mnist_benchmark_real_grok2.py — Continual Learning Validation
+This script serves as the primary benchmark for the Harmonic Arm architecture. By utilizing a Split-MNIST task protocol, 
+it demonstrates the model's ability to learn new digit classifications sequentially without suffering from catastrophic forgetting.
+It provides empirical proof that the geometric, phase-invariant representations managed by the Harmonic Arms remain stable even as 
+the system integrates new information.  
+
 ---
 
 ## 🚀 Running the Code
