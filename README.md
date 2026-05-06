@@ -70,6 +70,9 @@ A proof-of-concept for **coherence-based output gating**.
 ---
 
 ### 3. `prime_vs_harmonic_arms.html`
+
+![Ratios](Harmonic_Ratios.png) 
+
 Interactive visualization of integer vs non-integer dynamics.
 
 - **What it shows:**  
