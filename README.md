@@ -2,8 +2,6 @@
 
 Paper: harmonic_integer_weights_paper.md
 
-![Arms](hebbian_harmonic_arms.png) 
-
 ![Python](https://img.shields.io/badge/Python-3.11%2B-blue.svg)  
 ![Status](https://img.shields.io/badge/Status-Experimental-orange.svg)  
 ![License](https://img.shields.io/badge/License-MIT-green.svg)
@@ -46,6 +44,9 @@ This architecture aligns with emerging neuroscience observations:
 ## 🛠️ The Toolkit
 
 ### 1. `hebbian_harmonic_arms.py`
+
+![Arms](hebbian_harmonic_arms.png) 
+
 A demonstration of a **dynamic, local learning rule**.
 
 - **What it does:**  
