@@ -79,6 +79,57 @@ Interactive visualization of integer vs non-integer dynamics.
 - **What it shows:**  
   - Harmonic (integer ratio) systems → closed, stable loops  
   - Prime/irrational systems → non-closing, exploratory trajectories
+    
+![Attractor](attractorsighgem.ng) 
+
+### 4. attractorsighgem.py — Attractor Sculptor VST
+
+![Attractor](attractorsighgem.png) 
+
+Description: 
+
+An interactive tool that treats a 2D image as a 1D dynamical signal. It flattens the image into a time series,
+reconstructs its phase space using Takens delay embedding, and allows real-time geometric manipulation of the resulting 
+D attractor. The manipulated geometry is then projected back into image space.
+
+Core Functionality
+
+Converts image → 1D signal (row-major flattening)
+Performs Takens embedding to create a 3D point cloud (attractor)
+Provides interactive controls (keyboard + sliders) to move a "warp center" and adjust deformation strength
+Reprojects the deformed attractor back to a 2D image
+
+Key Observation
+
+Certain structural features (e.g., face-like shapes, edges, overall composition) often remain recognizable even after
+significant geometric warping of the attractor. This demonstrates that some identity information is preserved in the
+topological structure of the reconstructed phase space rather than in exact pixel values.
+
+Use
+
+Explore how deformations in phase space affect the reconstructed signal. Useful for studying viewpoint/manifold invariance. 
+
+### 5. 1dtoattractorviatakensandback.py — Core Takens Bidirectional Projection
+
+Description
+
+A minimal, clean implementation of the Takens embedding theorem pipeline for 1D signals (audio, flattened images, EEG, etc.).
+
+What it does
+
+Takens In: Embeds a 1D time series into a higher-dimensional phase space using delay coordinates.
+Processing: Applies Singular Value Decomposition (SVD) on the embedded points and retains the dominant components (principal dynamical modes).
+Takens Out: Reconstructs a 1D signal from the processed attractor using diagonal averaging.
+
+Purpose
+
+Demonstrates a full round-trip from observed 1D signal → reconstructed phase space geometry → reconstructed 1D signal.
+The SVD step acts as a simple geometric filter, keeping only the strongest directions in phase space (which often corresponds 
+to denoising or structure preservation).
+
+Significance
+This is a foundational building block for phase-space signal processing. It shows that meaningful signal structure can be
+manipulated in the reconstructed attractor and projected back, rather than operating directly in the original time or frequency domain.
 
 ---
 
