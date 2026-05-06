@@ -1,5 +1,7 @@
 # Takens In, Takens Out: The Dynamic AI Architecture
 
+Paper: harmonic_integer_weights_paper.md
+
 ![Arms](hebbian_harmonic_arms.png) 
 
 ![Python](https://img.shields.io/badge/Python-3.11%2B-blue.svg)  
