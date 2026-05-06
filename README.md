@@ -59,6 +59,8 @@ A demonstration of a **dynamic, local learning rule**.
 ### 2. `rajapinta_coherence_gate.py`
 A proof-of-concept for **coherence-based output gating**.
 
+![Gate](rajapinta_coherence_gate.png) 
+
 - **What it does:**  
   Acts as a topology detector, emitting output only when a stable attractor forms.
 
