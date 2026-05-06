@@ -1,5 +1,7 @@
 # Takens In, Takens Out: The Dynamic AI Architecture
 
+![Arms](hebbian_harmonic_arms.png) 
+
 ![Python](https://img.shields.io/badge/Python-3.11%2B-blue.svg)  
 ![Status](https://img.shields.io/badge/Status-Experimental-orange.svg)  
 ![License](https://img.shields.io/badge/License-MIT-green.svg)
