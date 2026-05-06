@@ -1,0 +1,184 @@
+
+<canvas id="cvs" width="680" height="500" style="width:100%;height:auto;display:block;border-radius:8px"></canvas>
+<div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 0 0;font-size:12px;color:var(--color-text-secondary)">
+  <button id="btn" onclick="togglePlay()" style="min-width:70px">⏸ pause</button>
+  <label>speed <input type="range" id="spd" min="0.01" max="0.3" step="0.01" value="0.04" style="width:80px" oninput="speed=+this.value"></label>
+  <label>arms <input type="range" id="na" min="2" max="8" step="1" value="6" style="width:60px" oninput="setN(+this.value)"> <span id="nao">6</span></label>
+  <button onclick="skipZero()">→ next ζ zero</button>
+  <button onclick="doReset()">reset</button>
+  <span style="margin-left:auto;font-family:monospace">t = <span id="tv">0.00</span></span>
+</div>
+<div style="font-size:11px;color:var(--color-text-secondary);padding:4px 0 0;line-height:1.5">
+  <span style="color:hsla(215,70%,62%,1)">■</span> prime trail (log(p) freqs — irrational ratios, never closes) &nbsp;
+  <span style="color:hsla(145,60%,52%,1)">■</span> harmonic trail (k·log(2) — rational ratios, closes every t≈9.06) &nbsp;
+  <span style="color:rgba(255,110,90,0.8)">|</span> Riemann zeros
+</div>
+<script>
+const cvs = document.getElementById('cvs');
+const ctx = cvs.getContext('2d');
+const W = 680, H = 500, STRIP_H = 90, PANEL_H = 410;
+const CX1 = W/4, CY1 = PANEL_H/2 + 18, CX2 = 3*W/4, CY2 = PANEL_H/2 + 18;
+const ARM_R = 105, TRAIL_LEN = 2000, SIG_LEN = 680;
+
+const PRIME_FREQS = [2,3,5,7,11,13,17,19].map(p => Math.log(p));
+const HARM_FREQS = [1,2,3,4,5,6,7,8].map(k => k * Math.log(2));
+const PERIOD_H = 2*Math.PI / Math.log(2);
+const RZEROS = [14.135,21.022,25.011,30.425,32.935,37.586,40.919,43.327,48.005,49.774];
+
+let N = 6, t = 0, playing = true, speed = 0.04, zeroIdx = 0;
+const pTrail = [], hTrail = [], pSig = [], hSig = [], tBuf = [];
+
+function getAmps(n) {
+  const raw = Array.from({length:n}, (_,k) => Math.pow(k+1,-0.5));
+  const total = raw.reduce((a,b)=>a+b,0);
+  return raw.map(a => a * ARM_R / total);
+}
+
+function armTip(freqs, amps, t, n) {
+  let x=0, y=0;
+  const joints = [{x:0,y:0}];
+  for (let k=0; k<n; k++) {
+    const a = freqs[k]*t;
+    x += amps[k]*Math.cos(a); y += amps[k]*Math.sin(a);
+    joints.push({x,y});
+  }
+  return {x, y, joints};
+}
+
+function drawPanel(cx, cy, freqs, amps, n, trail, sigBuf, hue) {
+  const res = armTip(freqs, amps, t, n);
+  const tx = cx+res.x, ty = cy+res.y;
+
+  for (let k=0; k<res.joints.length-1; k++) {
+    const a1=res.joints[k], a2=res.joints[k+1];
+    const al = Math.max(0.15, 1 - k*0.11);
+    ctx.strokeStyle = `hsla(${hue},50%,58%,${al*0.5})`;
+    ctx.lineWidth = Math.max(0.8, 1.5-k*0.12);
+    ctx.beginPath(); ctx.moveTo(cx+a1.x, cy+a1.y); ctx.lineTo(cx+a2.x, cy+a2.y); ctx.stroke();
+    if (k>0) {
+      ctx.beginPath(); ctx.arc(cx+a1.x, cy+a1.y, 2, 0, Math.PI*2);
+      ctx.fillStyle = `hsla(${hue},50%,65%,0.5)`; ctx.fill();
+    }
+  }
+
+  trail.push({x:tx, y:ty});
+  if (trail.length > TRAIL_LEN) trail.shift();
+  sigBuf.push(res.x);
+  if (sigBuf.length > SIG_LEN) sigBuf.shift();
+
+  if (trail.length > 1) {
+    ctx.lineWidth = 0.8;
+    for (let i=1; i<trail.length; i++) {
+      const age = i/trail.length;
+      ctx.strokeStyle = `hsla(${hue},65%,58%,${Math.pow(age,0.45)*0.65})`;
+      ctx.beginPath(); ctx.moveTo(trail[i-1].x, trail[i-1].y); ctx.lineTo(trail[i].x, trail[i].y); ctx.stroke();
+    }
+  }
+
+  const nearOrigin = Math.sqrt(res.x*res.x + res.y*res.y) < ARM_R * 0.18;
+  if (nearOrigin) {
+    const g = ctx.createRadialGradient(cx,cy,0,cx,cy,ARM_R*0.3);
+    g.addColorStop(0,`hsla(${hue},80%,70%,0.25)`); g.addColorStop(1,'transparent');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx,cy,ARM_R*0.3,0,Math.PI*2); ctx.fill();
+  }
+
+  ctx.beginPath(); ctx.arc(tx, ty, 4, 0, Math.PI*2);
+  ctx.fillStyle = `hsl(${hue+20},80%,72%)`; ctx.fill();
+  ctx.beginPath(); ctx.arc(cx, cy, 3, 0, Math.PI*2);
+  ctx.fillStyle = `hsla(${hue},40%,55%,0.4)`; ctx.fill();
+  ctx.strokeStyle = `hsla(${hue},30%,55%,0.08)`;
+  ctx.lineWidth = 0.5; ctx.beginPath(); ctx.arc(cx,cy,ARM_R,0,Math.PI*2); ctx.stroke();
+}
+
+function drawStrip() {
+  const y0 = PANEL_H;
+  const isDark = matchMedia('(prefers-color-scheme: dark)').matches;
+  ctx.fillStyle = isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)';
+  ctx.fillRect(0, y0, W, STRIP_H);
+  ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
+  ctx.lineWidth = 0.5; ctx.beginPath();
+  ctx.moveTo(0, y0+STRIP_H/2); ctx.lineTo(W, y0+STRIP_H/2); ctx.stroke();
+
+  const half = STRIP_H/2 - 10;
+
+  for (const [buf, hue] of [[pSig,215],[hSig,145]]) {
+    if (buf.length < 2) continue;
+    ctx.beginPath(); ctx.lineWidth = 1;
+    for (let i=0; i<buf.length; i++) {
+      const px = (i/SIG_LEN)*W;
+      const py = y0 + STRIP_H/2 - (buf[i]/ARM_R)*half;
+      i===0 ? ctx.moveTo(px,py) : ctx.lineTo(px,py);
+    }
+    ctx.strokeStyle = `hsla(${hue},65%,58%,0.75)`; ctx.stroke();
+  }
+
+  if (tBuf.length > 0) {
+    const tMin = tBuf[0], tMax = tBuf[tBuf.length-1];
+    const tRange = tMax - tMin || 1;
+
+    for (const z of RZEROS) {
+      const idx = tBuf.findIndex(tv => tv >= z);
+      if (idx < 0) continue;
+      const px = (idx/SIG_LEN)*W;
+      ctx.strokeStyle = 'rgba(255,110,90,0.55)'; ctx.lineWidth = 0.7;
+      ctx.setLineDash([3,4]); ctx.beginPath();
+      ctx.moveTo(px, y0); ctx.lineTo(px, y0+STRIP_H); ctx.stroke(); ctx.setLineDash([]);
+    }
+
+    let pH = Math.ceil(tMin/PERIOD_H)*PERIOD_H;
+    while (pH <= tMax) {
+      const idx = tBuf.findIndex(tv => tv >= pH);
+      if (idx >= 0) {
+        const px = (idx/SIG_LEN)*W;
+        ctx.strokeStyle = 'rgba(100,200,130,0.35)'; ctx.lineWidth = 0.7;
+        ctx.setLineDash([2,5]); ctx.beginPath();
+        ctx.moveTo(px, y0); ctx.lineTo(px, y0+STRIP_H); ctx.stroke(); ctx.setLineDash([]);
+      }
+      pH += PERIOD_H;
+    }
+  }
+}
+
+function draw() {
+  const isDark = matchMedia('(prefers-color-scheme: dark)').matches;
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = isDark ? '#0d0e16' : '#f7f7fb';
+  ctx.fillRect(0, 0, W, H);
+
+  const lc = isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)';
+  const lc2 = isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.28)';
+  ctx.fillStyle = lc; ctx.font = '11px monospace'; ctx.textAlign = 'center';
+  ctx.fillText('prime arms: log(2), log(3), log(5), log(7)...', CX1, 14);
+  ctx.fillText('harmonic arms: log(2), 2·log(2), 3·log(2)...', CX2, 14);
+  ctx.fillStyle = lc2; ctx.font = '10px monospace';
+  ctx.fillText('ratios log(p)/log(q) are irrational → never aligns', CX1, 27);
+  ctx.fillText('all ratios are rational integers → period T ≈ 9.06', CX2, 27);
+
+  ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+  ctx.lineWidth=0.5; ctx.setLineDash([4,4]);
+  ctx.beginPath(); ctx.moveTo(W/2,32); ctx.lineTo(W/2,PANEL_H-4); ctx.stroke();
+  ctx.setLineDash([]);
+
+  const amps = getAmps(N);
+  drawPanel(CX1, CY1, PRIME_FREQS, amps, N, pTrail, pSig, 215);
+  drawPanel(CX2, CY2, HARM_FREQS, amps, N, hTrail, hSig, 145);
+  drawStrip();
+
+  ctx.fillStyle = lc2; ctx.font = '10px monospace'; ctx.textAlign = 'right';
+  ctx.fillText('t = ' + t.toFixed(2), W-6, H-5);
+}
+
+function frame() {
+  if (playing) { t += speed; tBuf.push(t); if (tBuf.length > SIG_LEN) tBuf.shift(); }
+  document.getElementById('tv').textContent = t.toFixed(2);
+  draw();
+  requestAnimationFrame(frame);
+}
+
+function togglePlay() { playing=!playing; document.getElementById('btn').textContent=playing?'⏸ pause':'▶ play'; }
+function setN(n) { N=n; document.getElementById('nao').textContent=n; pTrail.length=0; hTrail.length=0; }
+function skipZero() { if(zeroIdx>=RZEROS.length)zeroIdx=0; t=RZEROS[zeroIdx]-0.5; zeroIdx++; pTrail.length=0; hTrail.length=0; }
+function doReset() { t=0; zeroIdx=0; pTrail.length=0; hTrail.length=0; pSig.length=0; hSig.length=0; tBuf.length=0; }
+
+frame();
+</script>
