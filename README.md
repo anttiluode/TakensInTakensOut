@@ -80,7 +80,7 @@ Interactive visualization of integer vs non-integer dynamics.
   - Harmonic (integer ratio) systems → closed, stable loops  
   - Prime/irrational systems → non-closing, exploratory trajectories
     
-### 4. attractorsighgem.py — Attractor Sculptor VST
+### 4. attractorsighgem3.py — Attractor Sculptor VST
 
 ![Attractor](attractorsighgem.png) 
 
